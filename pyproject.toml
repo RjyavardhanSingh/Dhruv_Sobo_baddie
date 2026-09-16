@@ -1,7 +1,7 @@
 [project]
 name = "self-learning-platform"
 version = "0.1.0"
-description = "Self Learning Platform - PDF extraction agent"
+description = "Self Learning Platform - adaptive oral learning context builder"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -13,14 +13,14 @@ dependencies = [
 ]
 
 [project.scripts]
-agent = "agent:main"
+agent = "cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "agent"
+module-name = ["models", "ingestion", "context", "cli"]
 module-root = "src"
 
 [dependency-groups]

@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from agent.pdf import extract_pdf
+from ingestion.pdf import extract_pdf
+from models import MaterialKind
 
 # Resolve PDF path relative to this file, not CWD
 PDF_PATH = Path(__file__).parent.parent / "data" / "test_biology.pdf"
@@ -11,7 +12,8 @@ PDF_PATH = Path(__file__).parent.parent / "data" / "test_biology.pdf"
 def test_extract_pdf_basic():
     document = extract_pdf(PDF_PATH)
 
-    assert document.file_path == "test_biology.pdf"
+    assert document.name == "test_biology.pdf"
+    assert document.kind is MaterialKind.PDF
     assert document.page_count == 3
     assert len(document.pages) == 3
     assert all(page.text for page in document.pages)
@@ -39,7 +41,7 @@ def test_extract_pdf_content():
 
     # full_text property joins pages
     assert "Biology is the scientific study" in document.full_text
-    assert len(document.full_text) > 500
+    assert document.word_count > 100
 
 
 def test_extract_pdf_accepts_string_path():

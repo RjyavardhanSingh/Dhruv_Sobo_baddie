@@ -1,19 +1,34 @@
 # Self Learning Platform
 
-PDF extraction agent for the Self Learning Platform.
+Adaptive oral learning platform. **Phase 1 so far: the context builder** — turn
+uploaded notes (PDF / text / Markdown) plus a learning goal into one normalized
+`LearningContext` that downstream stages (scope, curriculum, examiner) consume.
 
 ## Structure
 
 ```
 .
-├── src/agent/        # Package source (import `agent`)
-│   ├── __init__.py   # CLI entry-point `agent`
-│   └── pdf.py        # PDF extraction (pymupdf + pydantic)
-├── tests/            # pytest suite
-├── data/             # Sample PDFs
-├── pyproject.toml    # Project metadata & tooling
-└── uv.lock           # Locked dependencies
+├── src/                      # Source modules (each owns one job)
+│   ├── models/               # Shared domain models (pydantic)
+│   │   ├── material.py       # SourcePage, SourceDocument, MaterialKind
+│   │   ├── goal.py           # LearningGoal, GoalLevel
+│   │   └── context.py        # ContextStats, LearningContext
+│   ├── ingestion/            # Raw uploads -> normalized source documents
+│   │   ├── registry.py       # Dispatch by file extension
+│   │   ├── pdf.py            # PDF extractor (pymupdf)
+│   │   ├── text.py           # Plain-text extractor
+│   │   └── markdown.py       # Markdown -> per-heading sections
+│   ├── context/              # Source documents + goal -> LearningContext
+│   │   └── builder.py        # ContextBuilder / build_context
+│   └── cli/                  # Thin command-line shell
+├── tests/                    # pytest suite
+├── data/                     # Sample PDFs
+├── pyproject.toml            # Project metadata & tooling
+└── uv.lock                   # Locked dependencies
 ```
+
+`models` defines the vocabulary, `ingestion` knows file formats, `context`
+orchestrates, and `cli` is the outer shell.
 
 ## Setup
 
@@ -27,11 +42,21 @@ uv sync --group dev  # install dev dependencies (pytest, ruff)
 ## Usage
 
 ```bash
-# CLI entry point
-uv run agent
+# Build a context from a PDF, a Markdown file, or pasted text
+uv run agent build-context data/test_biology.pdf \
+  --subject Biology --target "explain photosynthesis" --level beginner
 
-# Extract PDF via Python
-uv run python -c "from agent.pdf import extract_pdf; print(extract_pdf('data/test_biology.pdf').full_text[:500])"
+# Or from Python
+uv run python -c "
+from context import ContextBuilder
+from models import LearningGoal
+ctx = (ContextBuilder()
+       .with_goal(LearningGoal(subject='Biology', target='explain photosynthesis'))
+       .add_file('data/test_biology.pdf')
+       .add_text('# Extra notes\n\nCells are the unit of life.', name='extra.md')
+       .build())
+print(ctx.context_id, ctx.stats)
+"
 
 # Format / lint
 uv run ruff check src tests
