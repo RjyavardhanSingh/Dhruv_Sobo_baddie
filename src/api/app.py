@@ -1,8 +1,12 @@
 """FastAPI application factory."""
 
-from fastapi import FastAPI
+from dotenv import load_dotenv
 
-from api.routes import contexts, materials, questions, sessions
+load_dotenv()
+
+from fastapi import FastAPI  # noqa: E402
+
+from api.routes import contexts, materials, questions, sessions  # noqa: E402
 
 
 def create_app() -> FastAPI:

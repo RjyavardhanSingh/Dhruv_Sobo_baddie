@@ -45,3 +45,6 @@ coverage.xml
 # Data / local
 *.log
 .env
+
+# Docker
+docker-compose.override.yml
