@@ -22,10 +22,12 @@ async def generate_questions(
 
     questions = []
     for i in range(count):
+        text = f"Explain {target} in the context of {subject}"
+        text += f" (question {i + 1} of {count})."
         questions.append(
             {
                 "id": i + 1,
-                "text": f"Explain {target} in the context of {subject} (question {i + 1} of {count}).",
+                "text": text,
                 "topic": subject,
                 "difficulty": "medium",
             }

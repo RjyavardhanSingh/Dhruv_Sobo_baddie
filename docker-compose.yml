@@ -1,0 +1,14 @@
+services:
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v2.0.0
+    ports:
+      - "6380:6379"
+    command: dragonfly --requirepass ${DRAGONFLY_PASSWORD}
+    env_file:
+      - .env
+    volumes:
+      - dragonfly-data:/data
+    restart: unless-stopped
+
+volumes:
+  dragonfly-data:
