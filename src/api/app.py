@@ -1,6 +1,6 @@
 """FastAPI application factory."""
 
-from pylogs_hook import patch; patch()  
+# from pylogs_hook import patch; patch()
 
 from pathlib import Path
 
