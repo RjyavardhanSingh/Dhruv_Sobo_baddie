@@ -70,7 +70,7 @@ Keep the product to **one loop**. No dashboards full of modes on day one.
 | **Upload** | Drag PDF or paste text | Add material |
 | **Goal** | Short form: subject, exam/date (optional), target (e.g. “score 80%”, “explain Gauss’s Law”) | Fill 3–5 fields |
 | **Preparing** | Progress: “Reading your notes… Finding gaps… Building your practice set…” | Wait (with plain status, not jargon) |
-| **Practice** | One question at a time. Listen → speak (or type in v1). Next. | Answer |
+| **Practice** | One question at a time. Listen → speak your answer. Next. | Answer |
 | **Results** | Readiness %, Strong / Weak / Misconceptions, 3 next actions | Review |
 | **Retest** | “Practice weak areas (5 questions)” | One tap |
 
@@ -93,7 +93,7 @@ Keep the product to **one loop**. No dashboards full of modes on day one.
 | Auto topic map from notes | (Hidden; shown as “Topics we’ll cover”) | Structure without complexity |
 | Fill gaps with trusted sources when notes are incomplete | **We filled a few gaps from trusted sources** | Key differentiator — shown as a short list + links |
 | Generate a short practice set (e.g. 10 questions) | **Your practice set** | Not endless quiz bank |
-| Typed answers first | **Type your answer** | Ship quality before voice |
+| STT answers (spoken) | **Speak your answer** | Oral practice from day one |
 | Fair scoring on understanding | **How you did** | Deterministic score from rubrics (backend) |
 | Weak areas + misconceptions in plain language | **What to fix** | Actionable |
 | One-tap targeted retest | **Retest weak areas** | Closes the loop |
@@ -106,7 +106,7 @@ Keep the product to **one loop**. No dashboards full of modes on day one.
 | Citations for every important claim / question | **See sources** |
 | Adaptive next question (harder / follow-up / diagnostic) | Feels like “the app listens to you” — no separate mode |
 | Mastery per topic over time | **Your progress** (simple bars) |
-| Voice: hear questions + speak answers | **Speak your answer** |
+| TTS: hear questions read aloud | **Listen to question** |
 | STT confidence → “Could you say that again?” | Prevents unfair penalties |
 
 ### Explicitly later (do not clutter MVP)
@@ -160,7 +160,7 @@ Say this in marketing and keep it true in the product:
 3. **Skip / I don’t know** — always allowed; counted as weak, not shameful  
 4. **No answer key shown during the session**  
 5. **After each answer (optional light mode):** short “Got it / Needs work” — full report only at the end  
-6. **Session length default:** 10 questions (~10–15 min typed; shorter when voice lands)  
+6. **Session length default:** 10 questions (~10–15 min)  
 7. **End state is always Results → Retest**, never a dead end
 
 ---
@@ -212,14 +212,12 @@ Five intelligent parts behind the scenes (not five products):
 
 | Phase | Ship | User feels |
 |-------|------|------------|
-| **1 – Core** | Upload + goal + topics + 10 typed questions + rubric scoring + weakness report + retest | “This actually judges if I understand” |
+| **1 – Core** | Upload + goal + topics + 10 questions + STT answers + rubric scoring + weakness report + retest | “This actually judges if I understand” |
 | **2 – Grounded** | Chunking, retrieval, citations on questions/feedback | “I can trust why it asked that” |
 | **3 – Research** | Gap detection + focused web research + source ranking | “It filled what my notes missed” |
 | **4 – Adaptive** | Mastery, follow-ups, misconception probes | “It listens and adjusts” |
-| **5 – Voice** | TTS questions + STT answers + re-ask on unclear speech | “Real viva practice” |
+| **5 – Voice** | TTS questions only + re-ask on unclear speech | “Real viva practice” |
 | **6+** | Long-term progress, study plans, more languages, classrooms | Habit & scale |
-
-**Decision:** Phase 1 is the quality gate. Do not block MVP on voice.
 
 ---
 
@@ -251,13 +249,30 @@ Five intelligent parts behind the scenes (not five products):
 3. Free tier limits (sessions / uploads)  
 4. Whether light “Got it / Needs work” appears after every question or only at the end  
 5. Primary GTM: India exam prep first vs global English first  
+6. STT provider selection (Whisper / Deepgram / Google)  
 
 ---
 
 ## 16. Summary for stakeholders
 
-We’re building a **simple oral practice loop**: upload notes, set a goal, answer out loud (typed first), get a clear readiness report, retest weak spots.
+We’re building a **simple oral practice loop**: upload notes, set a goal, answer out loud, get a clear readiness report, retest weak spots.
 
 We differentiate by combining **gap-filling research**, **fair understanding-based scoring**, and **adaptive follow-up** — without burying the user in AI features.
 
 If the app ever needs a tooltip to explain a button, the flow isn’t simple enough yet.
+
+---
+
+## 17. Entry point
+
+**FastAPI server** is the MVP entry point. CLI (`src/cli/`) is paused.
+
+| Component | Status |
+|---|---|
+| `src/models/` | Reuse — domain models (Pydantic) |
+| `src/ingestion/` | Reuse — PDF / text / Markdown extraction |
+| `src/context/` | Reuse — ContextBuilder |
+| `src/api/` | New — FastAPI routes |
+| `src/services/` | New — business logic layer |
+| `src/db/` | New — Neon PostgreSQL connection + schema |
+| `src/cli/` | Paused — not building for now |
