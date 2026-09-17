@@ -1,34 +1,63 @@
-# Self Learning Platform
+# Adaptive Oral Learning Platform
 
-Adaptive oral learning platform. **Phase 1 so far: the context builder** — turn
-uploaded notes (PDF / text / Markdown) plus a learning goal into one normalized
-`LearningContext` that downstream stages (scope, curriculum, examiner) consume.
+Upload what you're studying, say what you need to achieve, practice by speaking your answers out loud, then get a clear report on what you know, what's weak, and what to retest.
+
+## What's Done
+
+- **Material upload** — PDF (stored in Neon Object Storage), text, Markdown
+- **Context builder** — combines uploaded material + learning goal into a `LearningContext`
+- **Dragonfly cache** — context cached in Dragonfly (Redis-compatible) for fast reads
+- **Database** — Neon PostgreSQL with auto-schema on startup (materials, contexts, sessions tables)
+- **Object storage** — Neon Object Storage for PDF files (S3-compatible)
+- **CI** — GitHub Actions workflow for lint (ruff) and tests (pytest) on PRs
+- **API scaffold** — all endpoints wired up, FastAPI app runs
+
+## What's Not Done
+
+- **Question generation** — endpoint exists but no LLM integration (returns hardcoded placeholder questions)
+- **Session flow** — endpoints exist (create, answer, complete) but:
+  - Scoring is placeholder (answer length, not understanding)
+  - No real evaluation logic
+  - No weakness analysis
+  - No misconception detection
+- **LLM integration** — no actual LLM calls anywhere
+- **STT (Speech-to-Text)** — answers are typed for now, voice input is Phase 1 goal
+- **Weakness report / results screen** — session completes but no analysis
+- **Retest flow** — not implemented
+- **Frontend** — API only, no UI
+- **Gap detection / research** — no source filling from trusted sources
+- **Adaptive questioning** — no follow-up or difficulty adjustment
+- **Citations** — no source attribution on questions
+- **TTS (Text-to-Speech)** — questions are text only
 
 ## Structure
 
 ```
-.
-├── src/                      # Source modules (each owns one job)
-│   ├── models/               # Shared domain models (pydantic)
-│   │   ├── material.py       # SourcePage, SourceDocument, MaterialKind
-│   │   ├── goal.py           # LearningGoal, GoalLevel
-│   │   └── context.py        # ContextStats, LearningContext
-│   ├── ingestion/            # Raw uploads -> normalized source documents
-│   │   ├── registry.py       # Dispatch by file extension
-│   │   ├── pdf.py            # PDF extractor (pymupdf)
-│   │   ├── text.py           # Plain-text extractor
-│   │   └── markdown.py       # Markdown -> per-heading sections
-│   ├── context/              # Source documents + goal -> LearningContext
-│   │   └── builder.py        # ContextBuilder / build_context
-│   └── cli/                  # Thin command-line shell
-├── tests/                    # pytest suite
-├── data/                     # Sample PDFs
-├── pyproject.toml            # Project metadata & tooling
-└── uv.lock                   # Locked dependencies
+src/
+├── api/                    # FastAPI routes + app factory
+│   ├── app.py              # App startup, lifespan (schema init)
+│   ├── schemas.py          # Pydantic request/response models
+│   └── routes/
+│       ├── materials.py    # Upload text or PDF
+│       ├── contexts.py     # Build learning context
+│       ├── questions.py    # Generate/fetch questions
+│       └── sessions.py     # Session lifecycle
+├── cache/                  # Dragonfly (Redis) connection + CacheService
+│   └── dragonfly.py
+├── db/                     # Neon PostgreSQL connection + schema
+│   ├── connection.py       # asyncpg pool wrapper
+│   └── schema.sql          # Table definitions (auto-applied on startup)
+├── services/               # Business logic
+│   ├── material_service.py # Upload text/PDF, object storage integration
+│   ├── context_service.py  # Build context, cache in Dragonfly
+│   ├── question_service.py # Generate questions, cache only
+│   ├── session_service.py  # Session lifecycle, DB write on complete
+│   └── object_storage.py   # Neon Object Storage (S3-compatible) client
+├── models/                 # Pydantic domain models
+├── ingestion/              # PDF/text/Markdown parsers
+├── context/                # ContextBuilder (material + goal → context)
+└── cli/                    # Paused — not building for now
 ```
-
-`models` defines the vocabulary, `ingestion` knows file formats, `context`
-orchestrates, and `cli` is the outer shell.
 
 ## Setup
 
@@ -39,32 +68,61 @@ uv sync              # install main dependencies
 uv sync --group dev  # install dev dependencies (pytest, ruff)
 ```
 
-## Usage
+## Environment Variables
+
+Create a `.env` file:
+
+```
+DATABASE_URL=postgresql://...
+DRAGONFLY_URL=redis://:password@localhost:6380
+DRAGONFLY_PASSWORD=your_password
+
+# Neon Object Storage
+AWS_ENDPOINT_URL_S3=https://...
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-2
+NEON_STORAGE_BUCKET=materials
+```
+
+## Running
 
 ```bash
-# Build a context from a PDF, a Markdown file, or pasted text
-uv run agent build-context data/test_biology.pdf \
-  --subject Biology --target "explain photosynthesis" --level beginner
+# Start Dragonfly
+docker compose up -d
 
-# Or from Python
-uv run python -c "
-from context import ContextBuilder
-from models import LearningGoal
-ctx = (ContextBuilder()
-       .with_goal(LearningGoal(subject='Biology', target='explain photosynthesis'))
-       .add_file('data/test_biology.pdf')
-       .add_text('# Extra notes\n\nCells are the unit of life.', name='extra.md')
-       .build())
-print(ctx.context_id, ctx.stats)
-"
-
-# Format / lint
-uv run ruff check src tests
-uv run ruff format src tests
+# Start server
+uv run uvicorn api.app:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Swagger docs at `http://localhost:8000/docs`.
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/materials` | Upload text/markdown (JSON body) |
+| `POST` | `/materials/upload` | Upload PDF file (multipart) |
+| `GET` | `/materials/{id}` | Fetch material metadata |
+| `GET` | `/materials/{id}/download` | Get presigned download URL |
+| `POST` | `/contexts` | Build context from materials + goal |
+| `POST` | `/contexts/{id}/questions` | Generate practice questions |
+| `GET` | `/contexts/{id}/questions` | Fetch cached questions |
+| `POST` | `/sessions` | Start a practice session |
+| `GET` | `/sessions/{id}` | Get session state |
+| `POST` | `/sessions/{id}/answer` | Submit an answer |
+| `POST` | `/sessions/{id}/complete` | Complete session, write to DB |
+| `GET` | `/health` | Health check |
 
 ## Testing
 
 ```bash
 uv run pytest -v
+```
+
+## Linting
+
+```bash
+uv run ruff check src/ tests/
+uv run ruff format src/ tests/
 ```

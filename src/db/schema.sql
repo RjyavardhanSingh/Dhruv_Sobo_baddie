@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS materials (
   kind TEXT NOT NULL,
   full_text TEXT NOT NULL,
   page_count INTEGER NOT NULL,
-  word_count INTEGER NOT NULL
+  word_count INTEGER NOT NULL,
+  object_key TEXT
 );
 
 CREATE TABLE IF NOT EXISTS contexts (
