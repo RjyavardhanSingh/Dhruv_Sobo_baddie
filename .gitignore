@@ -48,3 +48,15 @@ coverage.xml
 
 # Docker
 docker-compose.override.yml
+
+# Agent skills
+.agents/
+skills-lock.json
+
+#pylogs
+pylogs_hook.py
+pylogs.db
+pylogs.wal
+config.json
+pylogs.db-shm
+pylogs.db-wal

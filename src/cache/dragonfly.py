@@ -6,18 +6,19 @@ import json
 import os
 from typing import Any
 
+
 import redis
 
 _CACHE: redis.Redis | None = None
 
 
-def get_cache() -> redis.Redis:
+def get_cache() -> CacheService:
     """Get or create the Dragonfly connection singleton."""
     global _CACHE
     if _CACHE is None:
         url = os.getenv("DRAGONFLY_URL", "redis://localhost:6379")
         _CACHE = redis.from_url(url, decode_responses=True)
-    return _CACHE
+    return CacheService(_CACHE)
 
 
 class CacheService:
