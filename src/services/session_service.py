@@ -36,16 +36,21 @@ async def submit_answer(
     session_id: str,
     question_index: int,
     answer_text: str,
+    skipped: bool = False,
 ) -> dict:
     """Record an answer for a question. Updates session in Dragonfly.
 
+    Supports skipped=true per PRD §9.3 (scored 0, tagged weak).
     Returns the answer record with score.
     """
     state = cache.get(f"session:{session_id}")
     if state is None:
         raise ValueError(f"Session not found: {session_id}")
 
-    score = _score_answer(answer_text)
+    if skipped:
+        score = 0
+    else:
+        score = _score_answer(answer_text)
     feedback = "Good" if score >= 70 else "Needs work"
 
     answer_record = {
@@ -54,6 +59,8 @@ async def submit_answer(
         "score": score,
         "feedback": feedback,
     }
+    if skipped:
+        answer_record["skipped"] = True
 
     state["answers"].append(answer_record)
     state["scores"].append({"question_index": question_index, "score": score})

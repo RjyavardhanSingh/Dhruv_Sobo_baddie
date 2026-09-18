@@ -1,4 +1,4 @@
-"""Context creation routes."""
+"""Goal — define what learner wants to achieve."""
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -8,16 +8,18 @@ from db.connection import Database, get_db
 from models import LearningGoal
 from services import context_service
 
-router = APIRouter(prefix="/contexts", tags=["contexts"])
+router = APIRouter(prefix="/contexts", tags=["Goal"])
 
 
-@router.post("", response_model=ContextResponse)
+@router.post(
+    "", response_model=ContextResponse, summary="Goal — build context from materials + goal"
+)
 async def create_context(
     payload: ContextCreate,
     db: Database = Depends(get_db),
     cache: CacheService = Depends(get_cache),
 ):
-    """Build a learning context from materials + goal. Caches in Dragonfly."""
+    """Step 2 — Goal: turn uploads + goal into a LearningContext (DB + Dragonfly cache)."""
     goal = LearningGoal(
         subject=payload.subject,
         target=payload.target,
@@ -35,4 +37,35 @@ async def create_context(
         subject=ctx["goal"]["subject"],
         target=ctx["goal"]["target"],
         stats=ContextStatsResponse(**ctx["stats"]),
+    )
+
+
+@router.get("/{context_id}", response_model=ContextResponse, summary="Goal — fetch context")
+async def get_context(
+    context_id: str,
+    db: Database = Depends(get_db),
+    cache: CacheService = Depends(get_cache),
+):
+    """Step 2/3 — fetch context for Preparing. Cache-first, DB fallback."""
+    cached = cache.get(f"context:{context_id}")
+    if cached is not None:
+        return ContextResponse(
+            id=cached["context_id"],
+            subject=cached["goal"]["subject"],
+            target=cached["goal"]["target"],
+            stats=ContextStatsResponse(**cached["stats"]),
+        )
+    row = await db.fetchrow("SELECT * FROM contexts WHERE id = $1", context_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Context not found")
+    return ContextResponse(
+        id=row["id"],
+        subject=row["subject"],
+        target=row["target"],
+        stats=ContextStatsResponse(
+            source_count=row["source_count"],
+            page_count=row["page_count"],
+            word_count=row["word_count"],
+            reading_minutes=row["reading_minutes"],
+        ),
     )
