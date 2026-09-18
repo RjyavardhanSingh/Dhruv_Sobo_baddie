@@ -42,6 +42,17 @@ coverage.xml
 *~
 .DS_Store
 
+# Node.js / Bun / Frontend (root + slf_web)
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+.vite/
+.env.*
+!.env.example
+*.local
+
 # Data / local
 *.log
 .env
